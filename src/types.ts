@@ -92,7 +92,7 @@ export interface KeycloakInitOptions {
    * });
    * ```
    */
-  adapter?: KeycloakAdapter;
+  adapter?: KeycloakAdapterConstructor;
 
   /**
    * Specifies an action to do on load.
@@ -251,13 +251,15 @@ export interface FetchTokenResponse {
   refresh_token: string | null;
 }
 
-export interface KeycloakAdapter {
+export interface KeycloakAdapterConstructor {
   new (
     client: Readonly<KeycloakInstance>,
     keycloakConfiguration: Readonly<KeycloakConfig>,
     initOptions: Readonly<KeycloakInitOptions>
   ): KeycloakAdapter;
+}
 
+export interface KeycloakAdapter {
   createCallbackStorage(): CallbackStorage;
 
   login(options?: KeycloakLoginOptions): Promise<void>;
