@@ -255,6 +255,18 @@ export class KeycloakClient implements KeycloakInstance {
     const nonce = createUUID();
 
     const redirectUri = this.adapter!.redirectUri(options);
+    const {
+      scope: scopeOption,
+      // eslint-disable-next-line @typescript-eslint/no-unused-vars
+      redirectUri: redirectUriOption,
+      prompt,
+      action,
+      maxAge,
+      loginHint,
+      idpHint,
+      locale,
+      ...rest
+    } = options ?? {};
 
     let codeVerifier;
     let pkceChallenge;
@@ -272,18 +284,18 @@ export class KeycloakClient implements KeycloakInstance {
     };
 
     let scope;
-    if (options?.scope) {
-      if (options.scope.indexOf('openid') !== -1) {
-        scope = options.scope;
+    if (scopeOption) {
+      if (scopeOption.indexOf('openid') !== -1) {
+        scope = scopeOption;
       } else {
-        scope = 'openid ' + options.scope;
+        scope = 'openid ' + scopeOption;
       }
     } else {
       scope = 'openid';
     }
 
     const baseUrl =
-      options && options.action === 'register'
+      action === 'register'
         ? this.endpoints!.register()
         : this.endpoints!.authorize();
 
@@ -299,28 +311,28 @@ export class KeycloakClient implements KeycloakInstance {
       params.set('nonce', nonce);
     }
 
-    if (options?.prompt) {
-      params.set('prompt', options.prompt);
+    if (prompt) {
+      params.set('prompt', prompt);
     }
 
-    if (options?.maxAge) {
-      params.set('max_age', `${options.maxAge}`);
+    if (maxAge) {
+      params.set('max_age', `${maxAge}`);
     }
 
-    if (options?.loginHint) {
-      params.set('login_hint', options.loginHint);
+    if (loginHint) {
+      params.set('login_hint', loginHint);
     }
 
-    if (options?.idpHint) {
-      params.set('kc_idp_hint', options.idpHint);
+    if (idpHint) {
+      params.set('kc_idp_hint', idpHint);
     }
 
-    if (options?.action && options?.action !== 'register') {
-      params.set('kc_action', options.action);
+    if (action && action !== 'register') {
+      params.set('kc_action', action);
     }
 
-    if (options?.locale) {
-      params.set('ui_locales', options.locale);
+    if (locale) {
+      params.set('ui_locales', locale);
     }
 
     if (this?.pkceMethod && !!pkceChallenge) {
@@ -329,6 +341,10 @@ export class KeycloakClient implements KeycloakInstance {
     }
 
     this.callbackStorage!.add(callbackState);
+
+    Object.keys(rest).forEach((key) => {
+      params.set(key, `${rest[key]}`);
+    });
 
     return `${baseUrl}?${formatQuerystringParameters(params)}`;
   }
