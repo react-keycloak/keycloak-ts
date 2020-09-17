@@ -231,6 +231,11 @@ export interface KeycloakLoginOptions {
    * of the OIDC 1.0 specification.
    */
   locale?: string;
+
+  /**
+   * Extra params to pass on login
+   */
+  [k: string]: unknown;
 }
 
 export interface KeycloakLogoutOptions {
