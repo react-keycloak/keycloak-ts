@@ -12,6 +12,9 @@ import {
   formatQuerystringParameters,
 } from './url';
 
+const entriesPolyFill = (obj: any) =>
+  Object.keys(obj).map((key) => [key, obj[key]]);
+
 export function getRealmUrl(realm: string, authServerUrl?: string) {
   if (typeof authServerUrl === 'undefined') {
     return undefined;
@@ -125,7 +128,7 @@ export function parseCallbackParams(
 
   return {
     paramsString: formatQuerystringParameters(otherParams),
-    oauthParams: Object.fromEntries(oAuthParams.entries()),
+    oauthParams: entriesPolyFill(oAuthParams.entries()),
   };
 }
 
