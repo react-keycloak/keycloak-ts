@@ -12,8 +12,17 @@ import {
   formatQuerystringParameters,
 } from './url';
 
-const entriesPolyFill = (obj: any) =>
-  Object.keys(obj).map((key) => [key, obj[key]]);
+function fromEntries<T>(
+  iterable: IterableIterator<[string, T]>
+): { [key: string]: T } {
+  return [...iterable].reduce<{ [key: string]: T }>(
+    (obj, [key, val]) => ({
+      ...obj,
+      [key]: val,
+    }),
+    {}
+  );
+}
 
 export function getRealmUrl(realm: string, authServerUrl?: string) {
   if (typeof authServerUrl === 'undefined') {
@@ -128,7 +137,7 @@ export function parseCallbackParams(
 
   return {
     paramsString: formatQuerystringParameters(otherParams),
-    oauthParams: entriesPolyFill(oAuthParams.entries()),
+    oauthParams: fromEntries(oAuthParams.entries()),
   };
 }
 
