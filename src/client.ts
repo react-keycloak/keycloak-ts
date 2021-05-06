@@ -21,6 +21,8 @@ import type {
   OAuthResponse,
 } from './types';
 
+import Deferred from './utils/deferred';
+
 import {
   decodeToken,
   getRealmUrl,
@@ -100,7 +102,7 @@ export class KeycloakClient implements KeycloakInstance {
 
   private logWarn = this.createLogger(console.warn);
 
-  private refreshTokenPromise?: Promise<boolean>;
+  private refreshQueue: Array<Deferred<boolean>> = [];
 
   private useNonce?: boolean;
 
@@ -420,6 +422,85 @@ export class KeycloakClient implements KeycloakInstance {
     return expiresIn < 0;
   }
 
+  private async runUpdateToken(
+    minValidity: number,
+    deffered: Deferred<boolean>
+  ) {
+    let shouldRefreshToken: boolean = false;
+
+    if (minValidity === -1) {
+      shouldRefreshToken = true;
+      this.logInfo('[KEYCLOAK] Refreshing token: forced refresh');
+    } else if (!this.tokenParsed || this.isTokenExpired(minValidity)) {
+      shouldRefreshToken = true;
+      this.logInfo('[KEYCLOAK] Refreshing token: token expired');
+    }
+
+    if (!shouldRefreshToken) {
+      deffered.resolve(false);
+    } else {
+      const tokenUrl = this.endpoints!.token();
+
+      const params = new Map<string, string>();
+      params.set('client_id', this.clientId!);
+      params.set('grant_type', 'refresh_token');
+      params.set('refresh_token', this.refreshToken!);
+
+      this.refreshQueue.push(deffered);
+
+      if (this.refreshQueue.length === 1) {
+        let timeLocal = new Date().getTime();
+
+        try {
+          const tokenResponse = await this.adapter!.refreshTokens(
+            tokenUrl,
+            formatQuerystringParameters(params)
+          );
+
+          if (tokenResponse.error) {
+            this.clearToken();
+            throw new Error(tokenResponse.error);
+          } else {
+            this.logInfo('[KEYCLOAK] Token refreshed');
+
+            timeLocal = (timeLocal + new Date().getTime()) / 2;
+
+            this.setToken(
+              tokenResponse.access_token,
+              tokenResponse.refresh_token,
+              tokenResponse.id_token,
+              timeLocal
+            );
+
+            // Notify onAuthRefreshSuccess event handler if set
+            this.onAuthRefreshSuccess && this.onAuthRefreshSuccess();
+
+            for (
+              var p = this.refreshQueue.pop();
+              p != null;
+              p = this.refreshQueue.pop()
+            ) {
+              p.resolve(true);
+            }
+          }
+        } catch (err) {
+          this.logWarn('[KEYCLOAK] Failed to refresh token');
+
+          // Notify onAuthRefreshError event handler if set
+          this.onAuthRefreshError && this.onAuthRefreshError();
+
+          for (
+            var p = this.refreshQueue.pop();
+            p != null;
+            p = this.refreshQueue.pop()
+          ) {
+            p.reject(true);
+          }
+        }
+      }
+    }
+  }
+
   /**
    * If the token expires within `minValidity` seconds, the token is refreshed.
    * If the session status iframe is enabled, the session status is also
@@ -439,79 +520,16 @@ export class KeycloakClient implements KeycloakInstance {
    * });
    */
   public async updateToken(minValidity: number = 5): Promise<boolean> {
+    const deffered = new Deferred<boolean>();
+
     if (!this.refreshToken) {
-      throw new Error('missing refreshToken');
+      deffered.reject('missing refreshToken');
+      return deffered.getPromise();
     }
 
-    if (this.refreshTokenPromise) {
-      return this.refreshTokenPromise;
-    }
+    this.runUpdateToken(minValidity, deffered);
 
-    this.refreshTokenPromise = new Promise<boolean>(async (resolve, reject) => {
-      let shouldRefreshToken: boolean = false;
-
-      if (minValidity === -1) {
-        shouldRefreshToken = true;
-        this.logInfo('[KEYCLOAK] Refreshing token: forced refresh');
-      } else if (!this.tokenParsed || this.isTokenExpired(minValidity)) {
-        shouldRefreshToken = true;
-        this.logInfo('[KEYCLOAK] Refreshing token: token expired');
-      }
-
-      if (!shouldRefreshToken) {
-        resolve(false);
-
-        this.refreshTokenPromise = undefined;
-
-        return;
-      }
-
-      const tokenUrl = this.endpoints!.token();
-
-      const params = new Map<string, string>();
-      params.set('client_id', this.clientId!);
-      params.set('grant_type', 'refresh_token');
-      params.set('refresh_token', this.refreshToken!);
-
-      let timeLocal = new Date().getTime();
-
-      try {
-        const tokenResponse = await this.adapter!.refreshTokens(
-          tokenUrl,
-          formatQuerystringParameters(params)
-        );
-
-        this.logInfo('[KEYCLOAK] Token refreshed');
-
-        timeLocal = (timeLocal + new Date().getTime()) / 2;
-
-        this.setToken(
-          tokenResponse.access_token,
-          tokenResponse.refresh_token,
-          tokenResponse.id_token,
-          timeLocal
-        );
-
-        // Notify onAuthRefreshSuccess event handler if set
-        this.onAuthRefreshSuccess && this.onAuthRefreshSuccess();
-
-        resolve(true);
-      } catch (err) {
-        this.logWarn('[KEYCLOAK] Failed to refresh token');
-
-        // Clear tokens
-        this.clearToken();
-
-        // Notify onAuthRefreshError event handler if set
-        this.onAuthRefreshError && this.onAuthRefreshError();
-
-        reject();
-      }
-
-      this.refreshTokenPromise = undefined;
-    });
-
-    return this.refreshTokenPromise;
+    return deffered.getPromise();
   }
 
   /**
