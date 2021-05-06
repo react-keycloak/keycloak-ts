@@ -476,7 +476,7 @@ export class KeycloakClient implements KeycloakInstance {
             this.onAuthRefreshSuccess && this.onAuthRefreshSuccess();
 
             for (
-              var p = this.refreshQueue.pop();
+              let p = this.refreshQueue.pop();
               p != null;
               p = this.refreshQueue.pop()
             ) {
@@ -490,7 +490,7 @@ export class KeycloakClient implements KeycloakInstance {
           this.onAuthRefreshError && this.onAuthRefreshError();
 
           for (
-            var p = this.refreshQueue.pop();
+            let p = this.refreshQueue.pop();
             p != null;
             p = this.refreshQueue.pop()
           ) {
