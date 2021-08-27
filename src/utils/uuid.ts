@@ -44,9 +44,8 @@ export function generatePkceChallenge(
     // The use of the "plain" method is considered insecure and therefore not supported.
     case 'S256':
       // hash codeVerifier, then encode as url-safe base64 without padding
-      const hashBytes = sha256.arrayBuffer(codeVerifier);
-      // new Uint8Array(sha256_imported.arrayBuffer(codeVerifier));
-      const encodedHash = fromByteArray(hashBytes as Uint8Array)
+      const hashBytes = new Uint8Array(sha256.arrayBuffer(codeVerifier));
+      const encodedHash = fromByteArray(hashBytes)
         .replace(/\+/g, '-')
         .replace(/\//g, '_')
         .replace(/\=/g, '');
