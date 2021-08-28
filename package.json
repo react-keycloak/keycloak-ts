@@ -30,7 +30,7 @@
     "test": "jest",
     "typescript": "tsc --noEmit",
     "lint": "eslint \"**/*.{js,ts,tsx}\"",
-    "prepare": "bob build",
+    "prepare": "husky install && bob build",
     "release": "release-it"
   },
   "dependencies": {
@@ -52,7 +52,7 @@
     "eslint": "7.32.0",
     "eslint-config-prettier": "^6.10.1",
     "eslint-plugin-prettier": "3.4.1",
-    "husky": "^4.2.5",
+    "husky": "^7.0.2",
     "jest": "^26.6.3",
     "prettier": "^2.0.5",
     "react-native-builder-bob": "^0.18.1",
@@ -64,12 +64,6 @@
       "<rootDir>/example/node_modules",
       "<rootDir>/lib/"
     ]
-  },
-  "husky": {
-    "hooks": {
-      "commit-msg": "commitlint -E HUSKY_GIT_PARAMS",
-      "pre-commit": "yarn lint && yarn typescript"
-    }
   },
   "commitlint": {
     "extends": [
