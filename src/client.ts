@@ -342,7 +342,7 @@ export class KeycloakClient implements KeycloakInstance {
 
     this.callbackStorage!.add(callbackState);
 
-    Object.keys(rest).forEach((key) => {
+    Object.keys(rest).forEach(key => {
       params.set(key, `${rest[key]}`);
     });
 

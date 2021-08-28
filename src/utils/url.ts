@@ -46,7 +46,7 @@ export function extractQuerystringParameters(querystring: string) {
   return querystring
     .replace('?', '')
     .split('&')
-    .map((segment) => segment.split('='))
+    .map(segment => segment.split('='))
     .reduce((obj, [key, value]) => {
       obj[decode(key)] = decode(value);
       return obj;
