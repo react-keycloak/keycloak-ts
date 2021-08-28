@@ -31,6 +31,7 @@
     "typescript": "tsc --noEmit",
     "lint": "eslint \"**/*.{js,ts,tsx}\"",
     "prepare": "husky install && bob build",
+    "prerelease": "bob build",
     "release": "release-it"
   },
   "dependencies": {
