@@ -972,9 +972,10 @@ export class KeycloakClient implements KeycloakInstance {
       }
 
       try {
-        const oidcProviderConfig = await this.adapter!.fetchOIDCProviderConfigJSON(
-          oidcProviderConfigUrl
-        );
+        const oidcProviderConfig =
+          await this.adapter!.fetchOIDCProviderConfigJSON(
+            oidcProviderConfigUrl
+          );
 
         this.endpoints = setupOidcEndoints({
           oidcConfiguration: oidcProviderConfig,
